@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="description" content="SpiroSmart - Seu assistente inteligente para função pulmonar">
+    <title>EspiroInterpret</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif; }
+        
+        /* Static Air Flow Background */
+        .air-flow-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: #f3f4f6;
+        }
+        
+        .air-flow-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, 
+                rgba(30, 58, 138, 1) 0%, 
+                rgba(59, 130, 246, 0.9) 8%, 
+                rgba(96, 165, 250, 0.7) 15%, 
+                rgba(147, 197, 253, 0.5) 22%, 
+                rgba(147, 197, 253, 0.3) 28%, 
+                rgba(147, 197, 253, 0.1) 35%, 
+                transparent 40%
+            );
+        }
+        
+        /* Liquid Glass Effect */
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+        
+        /* Expandable section animation */
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .expandable-content.expanded {
+            max-height: 500px;
+        }
+        
+        /* Bottom padding for fixed menu */
+        .main-content {
+            padding-bottom: 100px;
+        }
+        
+        /* Enhanced card styling for better contrast */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Install button styling */
+        #installButton {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Static Air Flow Background -->
+    <div class="air-flow-bg"></div>
+    
+    <!-- Install Button -->
+    <button id="installButton" aria-label="Instalar aplicativo">↓</button>
+    
+    <!-- Página Principal -->
+    <div id="mainPage" class="container mx-auto px-4 py-6 max-w-md main-content">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-white mb-2">SpiroSmart</h1>
+                <p class="text-white/80 text-sm">Seu assistente inteligente para função pulmonar</p>
+            </div>
+
+            <!-- Título -->
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Dados da Espirometria</h2>
+            
+            <!-- Formulário -->
+            <div class="glass-card rounded-lg shadow-xl p-6 mb-6">
+                
+                <form id="espirometriaForm" class="space-y-5">
+                    <!-- Dados Pré-BD -->
+                    <div class="space-y-4">
+                        <h3 class="text-md font-medium text-gray-700 border-b border-gray-200 pb-2">Valores Pré-Broncodilatador</h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">VEF1 (% do previsto)</label>
+                            <input type="number" id="vef1_percent" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ex: 82" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">CVF (% do previsto)</label>
+                            <input type="number" id="cvf_percent" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ex: 94" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">VEF1/CVF (%)</label>
+                            <input type="number" id="razao_percent" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" placeholder="Calculado automaticamente" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Dados Pós-BD Expansível -->
+                    <div class="space-y-4">
+                        <button type="button" id="expandPosBD" class="w-full flex items-center justify-between text-md font-medium text-gray-700 border-b border-gray-200 pb-2 hover:text-blue-600 transition-colors">
+                            <span>Valores Pós-Broncodilatador (Opcional)</span>
+                            <svg id="expandIcon" class="w-5 h-5 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div id="posBDContent" class="expandable-content space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">VEF1 Pós-BD (% do previsto)</label>
+                                <input type="number" id="vef1_pos_bd_percent" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ex: 88">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">CVF Pós-BD (% do previsto)</label>
+                                <input type="number" id="cvf_pos_bd_percent" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ex: 98">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-2xl transition duration-200 shadow-lg">
+                        Interpretar exame
+                    </button>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center text-xs text-gray-500">
+                <p>Baseado nas diretrizes SBPT (2024) e ATS/ERS (2022)</p>
+            </div>
+    </div>
+
+    <!-- Página de Resultado -->
+    <div id="resultPage" class="hidden container mx-auto px-4 py-6 max-w-md min-h-screen main-content">
+            <!-- Header com botão voltar -->
+            <div class="flex items-center mb-6">
+                <button id="backButton" class="glass-card rounded-full p-2 shadow-lg hover:shadow-xl transition duration-200">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2 class="text-xl font-semibold text-gray-800 ml-4">Resultado da Interpretação</h2>
+            </div>
+
+            <!-- Resultado -->
+            <div class="glass-card rounded-2xl shadow-xl p-6">
+                <div class="text-center mb-6">
+                    <div class="bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800">Laudo Interpretativo</h3>
+                </div>
+
+                <div id="laudoResult" class="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 leading-relaxed">
+                    <!-- Resultado será inserido aqui -->
+                </div>
+                
+                <div id="padraoDestaque" class="hidden mt-4 p-4 rounded-lg border-l-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Padrão Ventilatório</p>
+                            <p id="padraoTexto" class="text-lg font-bold"></p>
+                        </div>
+                        <div id="gravidadeContainer" class="hidden text-right">
+                            <p class="text-sm font-medium text-gray-600">Gravidade</p>
+                            <p id="gravidadeTexto" class="text-lg font-bold"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center">
+                    <p>Interpretação baseada nas diretrizes SBPT (2024) e ATS/ERS (2022)</p>
+                </div>
+            </div>
+    </div>
+
+    <!-- Menu Fixo Liquid Glass -->
+    <div class="fixed bottom-0 left-0 right-0 liquid-glass rounded-t-3xl">
+        <div class="flex justify-around items-center py-4 px-6">
+            <button class="nav-item active flex flex-col items-center space-y-1 px-4 py-2 rounded-2xl" data-page="home">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs font-medium">Início</span>
+            </button>
+            
+            <button class="nav-item flex flex-col items-center space-y-1 px-4 py-2 rounded-2xl" data-page="saved">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                </svg>
+                <span class="text-xs font-medium">Salvos</span>
+            </button>
+            
+            <button class="nav-item flex flex-col items-center space-y-1 px-4 py-2 rounded-2xl" data-page="settings">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span class="text-xs font-medium">Config</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Elementos do DOM
+        const mainPage = document.getElementById('mainPage');
+        const resultPage = document.getElementById('resultPage');
+        const form = document.getElementById('espirometriaForm');
+        const backButton = document.getElementById('backButton');
+        const laudoResult = document.getElementById('laudoResult');
+        const installButton = document.getElementById('installButton');
+
+        // Campos do formulário
+        const vef1Input = document.getElementById('vef1_percent');
+        const cvfInput = document.getElementById('cvf_percent');
+        const razaoInput = document.getElementById('razao_percent');
+        const vef1PosInput = document.getElementById('vef1_pos_bd_percent');
+        const cvfPosInput = document.getElementById('cvf_pos_bd_percent');
+
+        // Calcular razão automaticamente
+        function calcularRazao() {
+            const vef1 = parseFloat(vef1Input.value) || 0;
+            const cvf = parseFloat(cvfInput.value) || 0;
+            
+            if (vef1 > 0 && cvf > 0) {
+                const razao = (vef1 / cvf) * 100;
+                razaoInput.value = razao.toFixed(1);
+            } else {
+                razaoInput.value = '';
+            }
+        }
+
+        // Event listeners para cálculo automático
+        vef1Input.addEventListener('input', calcularRazao);
+        cvfInput.addEventListener('input', calcularRazao);
+
+        // Funcionalidade da seção expansível
+        const expandButton = document.getElementById('expandPosBD');
+        const expandIcon = document.getElementById('expandIcon');
+        const posBDContent = document.getElementById('posBDContent');
+
+        expandButton.addEventListener('click', function() {
+            const isExpanded = posBDContent.classList.contains('expanded');
+            
+            if (isExpanded) {
+                posBDContent.classList.remove('expanded');
+                expandIcon.style.transform = 'rotate(0deg)';
+            } else {
+                posBDContent.classList.add('expanded');
+                expandIcon.style.transform = 'rotate(180deg)';
+                
+                // Scroll para mostrar a seção expandida após a animação
+                setTimeout(() => {
+                    expandButton.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }, 300);
+            }
+        });
+
+        // Função para interpretar espirometria
+        function interpretarEspirometria(dados) {
+            const { vef1_percent, cvf_percent, razao_percent, vef1_pos_bd_percent, cvf_pos_bd_percent } = dados;
+            
+            let laudo = "";
+            let padrao = "";
+            let gravidade = "";
+            
+            // Determinar padrão ventilatório
+            if (razao_percent < 70 && cvf_percent >= 80) {
+                padrao = "obstrutivo";
+            } else if (razao_percent >= 70 && cvf_percent < 80) {
+                padrao = "restritivo (sugestivo)";
+            } else if (razao_percent < 70 && cvf_percent < 80) {
+                padrao = "misto";
+            } else if (razao_percent >= 70 && cvf_percent >= 80 && vef1_percent >= 80) {
+                padrao = "normal";
+            } else {
+                padrao = "alterado";
+            }
+            
+            // Classificar gravidade para padrões obstrutivo ou misto
+            if (padrao === "obstrutivo" || padrao === "misto") {
+                if (vef1_percent >= 70) {
+                    gravidade = "leve";
+                } else if (vef1_percent >= 60) {
+                    gravidade = "moderada";
+                } else if (vef1_percent >= 50) {
+                    gravidade = "moderada a grave";
+                } else if (vef1_percent >= 35) {
+                    gravidade = "grave";
+                } else {
+                    gravidade = "muito grave";
+                }
+            }
+            
+            // Construir laudo inicial
+            if (padrao === "normal") {
+                laudo = "Espirometria dentro dos limites da normalidade.";
+            } else {
+                laudo = `Espirometria evidenciando padrão ventilatório ${padrao}`;
+                if (gravidade) {
+                    laudo += ` de grau ${gravidade}`;
+                }
+                laudo += ".";
+            }
+            
+            // Avaliar resposta ao broncodilatador
+            if (vef1_pos_bd_percent && cvf_pos_bd_percent) {
+                const ganho_vef1_abs = vef1_pos_bd_percent - vef1_percent;
+                const ganho_vef1_rel = (ganho_vef1_abs / vef1_percent) * 100;
+                const ganho_cvf_abs = cvf_pos_bd_percent - cvf_percent;
+                const ganho_cvf_rel = (ganho_cvf_abs / cvf_percent) * 100;
+                
+                // Critérios: ≥12% de ganho relativo E ≥5% de ganho absoluto (equivalente a ~200mL)
+                const criterio_vef1_rel = ganho_vef1_rel >= 12;
+                const criterio_vef1_abs = ganho_vef1_abs >= 5;
+                const criterio_cvf_rel = ganho_cvf_rel >= 12;
+                const criterio_cvf_abs = ganho_cvf_abs >= 5;
+                
+                const resposta_vef1_significativa = criterio_vef1_rel && criterio_vef1_abs;
+                const resposta_cvf_significativa = criterio_cvf_rel && criterio_cvf_abs;
+                const resposta_vef1_parcial = criterio_vef1_rel || criterio_vef1_abs;
+                const resposta_cvf_parcial = criterio_cvf_rel || criterio_cvf_abs;
+                
+                laudo += " ";
+                
+                if (resposta_vef1_significativa || resposta_cvf_significativa) {
+                    laudo += "Resposta significativa ao broncodilatador";
+                    if (resposta_vef1_significativa && resposta_cvf_significativa) {
+                        laudo += " para VEF1 e CVF";
+                    } else if (resposta_vef1_significativa) {
+                        laudo += " para VEF1";
+                    } else {
+                        laudo += " para CVF";
+                    }
+                    laudo += ".";
+                } else if (resposta_vef1_parcial || resposta_cvf_parcial) {
+                    laudo += "Resposta parcial ao broncodilatador";
+                    if (resposta_vef1_parcial && resposta_cvf_parcial) {
+                        laudo += " para VEF1 e CVF";
+                    } else if (resposta_vef1_parcial) {
+                        laudo += " para VEF1";
+                    } else {
+                        laudo += " para CVF";
+                    }
+                    laudo += ".";
+                } else {
+                    laudo += "Ausência de resposta significativa ao broncodilatador.";
+                }
+            }
+            
+            return { laudo, padrao, gravidade };
+        }
+
+        // Submissão do formulário
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const dados = {
+                vef1_percent: parseFloat(vef1Input.value),
+                cvf_percent: parseFloat(cvfInput.value),
+                razao_percent: parseFloat(razaoInput.value),
+                vef1_pos_bd_percent: vef1PosInput.value ? parseFloat(vef1PosInput.value) : null,
+                cvf_pos_bd_percent: cvfPosInput.value ? parseFloat(cvfPosInput.value) : null
+            };
+            
+            const resultado = interpretarEspirometria(dados);
+            laudoResult.textContent = resultado.laudo;
+            
+            // Mostrar destaque do padrão e gravidade
+            const padraoDestaque = document.getElementById('padraoDestaque');
+            const padraoTexto = document.getElementById('padraoTexto');
+            const gravidadeContainer = document.getElementById('gravidadeContainer');
+            const gravidadeTexto = document.getElementById('gravidadeTexto');
+            
+            // Definir cores baseadas no padrão
+            let corPadrao = '';
+            let corTexto = '';
+            
+            if (resultado.padrao === 'normal') {
+                corPadrao = 'border-green-500 bg-green-50';
+                corTexto = 'text-green-700';
+            } else if (resultado.padrao === 'obstrutivo') {
+                corPadrao = 'border-red-500 bg-red-50';
+                corTexto = 'text-red-700';
+            } else if (resultado.padrao === 'restritivo (sugestivo)') {
+                corPadrao = 'border-yellow-500 bg-yellow-50';
+                corTexto = 'text-yellow-700';
+            } else if (resultado.padrao === 'misto') {
+                corPadrao = 'border-purple-500 bg-purple-50';
+                corTexto = 'text-purple-700';
+            } else {
+                corPadrao = 'border-gray-500 bg-gray-50';
+                corTexto = 'text-gray-700';
+            }
+            
+            padraoDestaque.className = `mt-4 p-4 rounded-lg border-l-4 ${corPadrao}`;
+            padraoTexto.className = `text-lg font-bold ${corTexto}`;
+            padraoTexto.textContent = resultado.padrao.toUpperCase();
+            
+            // Mostrar gravidade se aplicável
+            if (resultado.gravidade) {
+                gravidadeContainer.classList.remove('hidden');
+                gravidadeTexto.className = `text-lg font-bold ${corTexto}`;
+                gravidadeTexto.textContent = resultado.gravidade.toUpperCase();
+            } else {
+                gravidadeContainer.classList.add('hidden');
+            }
+            
+            padraoDestaque.classList.remove('hidden');
+            
+            // Mostrar página de resultado
+            mainPage.classList.add('hidden');
+            resultPage.classList.remove('hidden');
+        });
+
+        // Botão voltar
+        backButton.addEventListener('click', function() {
+            resultPage.classList.add('hidden');
+            mainPage.classList.remove('hidden');
+        });
+
+        // Funcionalidade do menu de navegação
+        const navItems = document.querySelectorAll('.nav-item');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from all items
+                navItems.forEach(nav => nav.classList.remove('active'));
+                
+                // Add active class to clicked item
+                this.classList.add('active');
+                
+                const page = this.getAttribute('data-page');
+                
+                // Handle navigation based on page
+                if (page === 'home') {
+                    resultPage.classList.add('hidden');
+                    mainPage.classList.remove('hidden');
+                } else if (page === 'saved') {
+                    // Placeholder for saved page functionality
+                    console.log('Navegando para Salvos');
+                } else if (page === 'settings') {
+                    // Placeholder for settings page functionality
+                    console.log('Navegando para Configurações');
+                }
+            });
+        });
+
+        // PWA Installation Logic
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can install the PWA
+            installButton.style.display = 'flex';
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            // Optionally, send analytics event with outcome of user choice
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+            // Hide the install button
+            installButton.style.display = 'none';
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Hide the install button
+            installButton.style.display = 'none';
+            // Clear the deferredPrompt so it can be garbage collected
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
