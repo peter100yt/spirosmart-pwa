@@ -2,7 +2,7 @@
 import { html, useState, useMemo } from '../vendor/preact-htm.module.js';
 import { SECTIONS, SECTION_BY_TYPE, MODULADORES, PATOGENO_BY_KEY, fieldMeta, VISITAS } from './schema.js';
 import {
-  computeRecord, valueOf, fmtDate, fmtAge, fmtAgeLong, fmtNum, fmtSince, ofType, dayNum, has, nearest,
+  computeRecord, valueOf, byDateDesc, fmtDate, fmtAge, fmtAgeLong, fmtNum, fmtSince, ofType, dayNum, has, nearest,
   annualIndicators, plural, examControl, firstAndLastAnthro, sectionCount, pathogensLabel, yearOf, ageParts,
 } from './calc.js';
 import * as db from './db.js';
@@ -180,7 +180,7 @@ function Summary({ patient, records }) {
             <td>${fmtDate(r.date)}</td><td>${fmtNum(c.cvf_ppre, 0)}</td><td><b>${fmtNum(c.vef1_ppre, 0)}</b></td><td>${fmtNum(r.vef1cvf_pre)}</td><td>${fmtNum(c.fef_ppre, 0)}</td><td>${fmtNum(c.vef1_bd, 1)}</td></tr>`; })}</tbody>
         </table><p class="hint">% do previsto, pré-broncodilatador.</p>` : html`<p class="muted small">Sem espirometrias.</p>`}
       </${Card}>
-      <${Card} title="Culturas" action=${html`<a class="link small" href=${`#/p/${patient.id}/cultura`}>ver tudo</a>`}>
+      <${Card} title="Culturas" action=${html`<a class="link small" href=${`#/p/${patient.id}/infeccao`}>ver tudo</a>`}>
         ${cultures.length ? html`<ul class="list-plain">${cultures.map((c) => html`<li><span class="date">${fmtDate(c.date)}</span><${GermChips} keys=${c.germes} outro=${c.outroGerme} />${c.conduta && html`<span class="muted small ellipsis" title=${c.conduta}>${c.conduta}</span>`}</li>`)}</ul>` : html`<p class="muted small">Sem culturas.</p>`}
       </${Card}>
     </div>
@@ -291,6 +291,67 @@ function SectionTab({ section, patient, records }) {
   </div>`;
 }
 
+// ------------------------------------------- infecção respiratória (3 em 1) ----
+export const INFECCAO_TYPES = ['cultura', 'exacerbacao', 'erradicacao'];
+const INF_META = {
+  cultura: { label: 'Cultura', cls: 'ev-cult' },
+  exacerbacao: { label: 'Exacerbação', cls: 'ev-exac' },
+  erradicacao: { label: 'Erradicação', cls: 'ev-erra' },
+};
+
+function infDetails(r) {
+  if (r.type === 'cultura') {
+    return html`<${GermChips} keys=${r.germes} outro=${r.outroGerme} />
+      ${r.material && html`<span class="muted small">${r.material}</span>`}
+      ${r.conduta && html`<span class="muted small ellipsis" title=${r.conduta}>Conduta: ${r.conduta}</span>`}`;
+  }
+  if (r.type === 'exacerbacao') {
+    return html`${r.tratamento && html`<span class="badge">${r.tratamento}</span>`}
+      ${r.antibiotico && html`<span>${r.antibiotico}</span>`}
+      ${has(r.dias) && html`<span class="muted small">${r.dias} dia${r.dias === 1 ? '' : 's'}</span>`}
+      ${r.obs && html`<span class="muted small ellipsis" title=${r.obs}>${r.obs}</span>`}`;
+  }
+  return html`<${GermChips} keys=${r.germes} />
+    ${r.antibiotico && html`<span>${r.antibiotico}</span>`}
+    ${r.duracao && html`<span class="muted small">${r.duracao}</span>`}
+    ${r.obs && html`<span class="muted small ellipsis" title=${r.obs}>${r.obs}</span>`}`;
+}
+
+function InfectionTab({ patient, records, initial }) {
+  const [filter, setFilter] = useState(initial || 'todos');
+  const [menu, setMenu] = useState(false);
+  const all = records.filter((r) => INFECCAO_TYPES.includes(r.type)).sort(byDateDesc);
+  const n = (t) => all.filter((r) => r.type === t).length;
+  const list = filter === 'todos' ? all : all.filter((r) => r.type === filter);
+  const add = (t) => { setMenu(false); openRecord(SECTION_BY_TYPE[t], patient); };
+  const chip = (k, label, count) => html`<button class=${'chip-btn' + (filter === k ? ' on' : '')} aria-pressed=${filter === k} onClick=${() => setFilter(k)}>${label} <span class="n">${count}</span></button>`;
+  return html`<div class="section-tab">
+    <div class="toolbar">
+      <h2>Infecção respiratória <span class="count">${all.length}</span></h2>
+      <span class="spacer"></span>
+      <div class="menu-wrap">
+        <button class="btn btn-primary" aria-haspopup="menu" aria-expanded=${menu} onClick=${() => setMenu(!menu)}><${Icon} name="plus" size=${16} /> Adicionar</button>
+        ${menu && html`<div class="menu-backdrop" onClick=${() => setMenu(false)}></div>
+          <div class="menu" role="menu">${INFECCAO_TYPES.map((t) => html`<button role="menuitem" class="menu-item" onClick=${() => add(t)}><span class=${'ev-dot ' + INF_META[t].cls}></span>${INF_META[t].label}</button>`)}</div>`}
+      </div>
+    </div>
+    <div class="chips filter-row">
+      ${chip('todos', 'Todos', all.length)}${INFECCAO_TYPES.map((t) => chip(t, { cultura: 'Culturas', exacerbacao: 'Exacerbações', erradicacao: 'Erradicações' }[t], n(t)))}
+    </div>
+    ${list.length ? html`<div class="table-wrap"><table class="data">
+      <thead><tr><th class="sticky-col">Data</th><th>Idade</th><th>Tipo</th><th>Detalhes</th></tr></thead>
+      <tbody>${list.map((r) => html`<tr key=${r.id} tabindex="0" onClick=${() => openRecord(SECTION_BY_TYPE[r.type], patient, r)} onKeyDown=${(e) => { if (e.key === 'Enter') openRecord(SECTION_BY_TYPE[r.type], patient, r); }}>
+        <td class="sticky-col">${fmtDate(r.date)}</td>
+        <td>${patient.dataNascimento ? fmtAge(patient.dataNascimento, r.date) : ''}</td>
+        <td><span class=${'ev-tag ' + INF_META[r.type].cls}>${INF_META[r.type].label}</span></td>
+        <td class="details">${infDetails(r)}</td>
+      </tr>`)}</tbody>
+    </table></div>
+    <p class="hint">Clique em uma linha para editar. Culturas, exacerbações e erradicações aparecem juntas em ordem de data; use os filtros para ver só um tipo.</p>`
+    : html`<${Empty} icon="file" title="Nenhum registro neste filtro"><p class="muted">Use "Adicionar" para registrar uma cultura, exacerbação ou erradicação.</p></${Empty}>`}
+  </div>`;
+}
+
 // ------------------------------------------------ visitas do modulador ----
 function VisitsTab({ patient, records }) {
   const section = SECTION_BY_TYPE.modulador;
@@ -351,8 +412,16 @@ export function PatientPage({ id, tab }) {
     return html`<div class="page"><${Empty} icon="users" title="Paciente não encontrado"><a class="btn" href="#/">Voltar à lista</a></${Empty}></div>`;
   }
   const counts = sectionCount(records);
-  const active = tab && SECTION_BY_TYPE[tab] ? tab : 'resumo';
-  const tabs = [{ k: 'resumo', label: 'Resumo' }, ...SECTIONS.map((s) => ({ k: s.type, label: s.label, n: counts[s.type] || 0 }))];
+  // cultura / exacerbação / erradicação agora são uma única aba ("infeccao"); links antigos continuam funcionando
+  const legacy = INFECCAO_TYPES.includes(tab) ? tab : null;
+  const key = legacy ? 'infeccao' : tab;
+  const active = key === 'infeccao' || (key && SECTION_BY_TYPE[key]) ? key : 'resumo';
+  const tabs = [{ k: 'resumo', label: 'Resumo' }];
+  for (const sec of SECTIONS) {
+    if (INFECCAO_TYPES.includes(sec.type)) {
+      if (sec.type === 'cultura') tabs.push({ k: 'infeccao', label: 'Infecção respiratória', n: INFECCAO_TYPES.reduce((a, t) => a + (counts[t] || 0), 0) });
+    } else tabs.push({ k: sec.type, label: sec.label, n: counts[sec.type] || 0 });
+  }
   const section = SECTION_BY_TYPE[active];
   return html`<div class="page patient-page">
     <${Header} patient=${patient} records=${records} />
@@ -362,6 +431,7 @@ export function PatientPage({ id, tab }) {
     </nav>
     <div class="tab-body">
       ${active === 'resumo' ? html`<${Summary} patient=${patient} records=${records} />`
+        : active === 'infeccao' ? html`<${InfectionTab} key=${'inf' + (legacy || '')} patient=${patient} records=${records} initial=${legacy} />`
         : active === 'modulador' ? html`<${VisitsTab} patient=${patient} records=${records} />`
         : html`<${SectionTab} key=${active} section=${section} patient=${patient} records=${records} />`}
     </div>
