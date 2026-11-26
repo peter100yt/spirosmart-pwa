@@ -263,6 +263,15 @@ function SectionCharts({ section, records, patient }) {
   if (section.type === 'peakflow') {
     return html`<div class="charts"><${LineChart} title="Peak flow (% do previsto)" subtitle="≥80% adequado · 50–79% atenção · <50% alerta" series=${[{ label: '% previsto', points: pts((r) => computeRecord(r, patient).pfePct) }]} refLines=${[{ y: 80, label: '80%' }, { y: 50, label: '50%' }]} yFmt=${(v) => v.toFixed(0)} /></div>`;
   }
+  if (section.type === 'dinamometria') {
+    return html`<div class="charts"><${LineChart} title="Dinamometria (kgf)" series=${[{ label: 'Direita', points: pts((r) => r.direita) }, { label: 'Esquerda', points: pts((r) => r.esquerda) }]} events=${ev} /></div>`;
+  }
+  if (section.type === 'tsl1min') {
+    return html`<div class="charts"><${LineChart} title="Sentar e levantar 1 min (repetições)" series=${[{ label: 'Repetições', points: pts((r) => r.repeticoes) }]} events=${ev} yFmt=${(v) => v.toFixed(0)} /></div>`;
+  }
+  if (section.type === 'tsl5rep') {
+    return html`<div class="charts"><${LineChart} title="Sentar e levantar 5 rep. (segundos)" subtitle="menor tempo = melhor" series=${[{ label: 'Tempo (s)', points: pts((r) => r.tempo) }]} events=${ev} /></div>`;
+  }
   if (section.type === 'caminhada') {
     return html`<div class="charts"><${LineChart} title="Teste de caminhada (% do predito)" series=${[{ label: '% predito', points: pts((r) => computeRecord(r, patient).distPct) }]} events=${ev} yFmt=${(v) => v.toFixed(0)} /></div>`;
   }
@@ -352,6 +361,72 @@ function InfectionTab({ patient, records, initial }) {
   </div>`;
 }
 
+// ------------------------------------------------------ testes funcionais ----
+export const TESTES_TYPES = ['peakflow', 'caminhada', 'dinamometria', 'tsl1min', 'tsl5rep'];
+const TESTE_META = {
+  peakflow: { label: 'Peak flow', plural: 'Peak flow', cls: 'ev-cult' },
+  caminhada: { label: 'Caminhada (TC6)', plural: 'Caminhada (TC6)', cls: 'ev-erra' },
+  dinamometria: { label: 'Dinamometria', plural: 'Dinamometria', cls: 'ev-exac' },
+  tsl1min: { label: 'Sentar/levantar 1 min', plural: 'Sentar/levantar 1 min', cls: 'ev-t4' },
+  tsl5rep: { label: 'Sentar/levantar 5 rep.', plural: 'Sentar/levantar 5 rep.', cls: 'ev-t5' },
+};
+
+function testeDetails(r, patient) {
+  const c = computeRecord(r, patient);
+  const pct = (v, good = 80) => (has(v) ? html`<span class=${'badge ' + (v >= good ? 'badge-ok' : 'badge-warn')}>${fmtNum(v, 0)}%</span>` : '');
+  const spo2 = (has(r.spo2Ini) || has(r.spo2Min)) ? html`<span class="muted small">SpO₂ ${has(r.spo2Ini) ? fmtNum(r.spo2Ini, 0) : '—'}% → ${has(r.spo2Min) ? fmtNum(r.spo2Min, 0) : '—'}%</span>` : '';
+  const obs = r.obs ? html`<span class="muted small ellipsis" title=${r.obs}>${r.obs}</span>` : '';
+  switch (r.type) {
+    case 'peakflow':
+      return html`<span><b>${fmtNum(r.pfe, 0)}</b> L/min</span>${has(r.pfePrev) && html`<span class="muted small">previsto ${fmtNum(r.pfePrev, 0)}</span>`}${pct(c.pfePct)}${obs}`;
+    case 'caminhada':
+      return html`<span><b>${fmtNum(r.distancia, 0)}</b> m</span>${has(c.distPredita) && html`<span class="muted small">predito ${fmtNum(c.distPredita, 0)}</span>`}${pct(c.distPct)}${spo2}${obs}`;
+    case 'dinamometria':
+      return html`<span>Dir <b>${has(r.direita) ? fmtNum(r.direita) : '—'}</b> kgf</span><span>Esq <b>${has(r.esquerda) ? fmtNum(r.esquerda) : '—'}</b> kgf</span>${r.dominancia && html`<span class="muted small">dominante: ${r.dominancia}</span>`}${obs}`;
+    case 'tsl1min':
+      return html`<span><b>${fmtNum(r.repeticoes, 0)}</b> repetições</span>${has(r.repPrev) && html`<span class="muted small">previstas ${fmtNum(r.repPrev, 0)}</span>`}${pct(c.tslPct)}${spo2}${obs}`;
+    default:
+      return html`<span><b>${fmtNum(r.tempo)}</b> s</span>${obs}`;
+  }
+}
+
+function TestesTab({ patient, records, initial }) {
+  const [filter, setFilter] = useState(initial || 'todos');
+  const [menu, setMenu] = useState(false);
+  const all = records.filter((r) => TESTES_TYPES.includes(r.type)).sort(byDateDesc);
+  const n = (t) => all.filter((r) => r.type === t).length;
+  const list = filter === 'todos' ? all : all.filter((r) => r.type === filter);
+  const add = (t) => { setMenu(false); openRecord(SECTION_BY_TYPE[t], patient); };
+  const chip = (k, label, count) => html`<button class=${'chip-btn' + (filter === k ? ' on' : '')} aria-pressed=${filter === k} onClick=${() => setFilter(k)}>${label} <span class="n">${count}</span></button>`;
+  const chartTypes = (filter === 'todos' ? TESTES_TYPES : [filter]).filter((t) => n(t) > 1);
+  return html`<div class="section-tab">
+    <div class="toolbar">
+      <h2>Testes funcionais <span class="count">${all.length}</span></h2>
+      <span class="spacer"></span>
+      <div class="menu-wrap">
+        <button class="btn btn-primary" aria-haspopup="menu" aria-expanded=${menu} onClick=${() => setMenu(!menu)}><${Icon} name="plus" size=${16} /> Adicionar</button>
+        ${menu && html`<div class="menu-backdrop" onClick=${() => setMenu(false)}></div>
+          <div class="menu" role="menu">${TESTES_TYPES.map((t) => html`<button role="menuitem" class="menu-item" onClick=${() => add(t)}><span class=${'ev-dot ' + TESTE_META[t].cls}></span>${TESTE_META[t].label}</button>`)}</div>`}
+      </div>
+    </div>
+    <div class="chips filter-row">
+      ${chip('todos', 'Todos', all.length)}${TESTES_TYPES.map((t) => chip(t, TESTE_META[t].plural, n(t)))}
+    </div>
+    ${chartTypes.length > 0 && html`<div class="charts-grid">${chartTypes.map((t) => html`<${SectionCharts} key=${t} section=${SECTION_BY_TYPE[t]} records=${all.filter((r) => r.type === t)} patient=${patient} />`)}</div>`}
+    ${list.length ? html`<div class="table-wrap"><table class="data">
+      <thead><tr><th class="sticky-col">Data</th><th>Idade</th><th>Teste</th><th>Resultado</th></tr></thead>
+      <tbody>${list.map((r) => html`<tr key=${r.id} tabindex="0" onClick=${() => openRecord(SECTION_BY_TYPE[r.type], patient, r)} onKeyDown=${(e) => { if (e.key === 'Enter') openRecord(SECTION_BY_TYPE[r.type], patient, r); }}>
+        <td class="sticky-col">${fmtDate(r.date)}</td>
+        <td>${patient.dataNascimento ? fmtAge(patient.dataNascimento, r.date) : ''}</td>
+        <td><span class=${'ev-tag ' + TESTE_META[r.type].cls}>${TESTE_META[r.type].label}</span></td>
+        <td class="details">${testeDetails(r, patient)}</td>
+      </tr>`)}</tbody>
+    </table></div>
+    <p class="hint">Clique em uma linha para editar. Os testes aparecem juntos em ordem de data; use os filtros para ver um só.</p>`
+    : html`<${Empty} icon="file" title=${all.length ? 'Nenhum registro neste filtro' : 'Nenhum teste funcional registrado'}><p class="muted">Use "Adicionar" para registrar peak flow, caminhada, dinamometria ou testes de sentar e levantar.</p></${Empty}>`}
+  </div>`;
+}
+
 // ------------------------------------------------ visitas do modulador ----
 function VisitsTab({ patient, records }) {
   const section = SECTION_BY_TYPE.modulador;
@@ -413,13 +488,16 @@ export function PatientPage({ id, tab }) {
   }
   const counts = sectionCount(records);
   // cultura / exacerbação / erradicação agora são uma única aba ("infeccao"); links antigos continuam funcionando
-  const legacy = INFECCAO_TYPES.includes(tab) ? tab : null;
-  const key = legacy ? 'infeccao' : tab;
-  const active = key === 'infeccao' || (key && SECTION_BY_TYPE[key]) ? key : 'resumo';
+  const legacy = INFECCAO_TYPES.includes(tab) || TESTES_TYPES.includes(tab) ? tab : null;
+  const key = INFECCAO_TYPES.includes(tab) ? 'infeccao' : TESTES_TYPES.includes(tab) ? 'testes' : tab;
+  const active = key === 'infeccao' || key === 'testes' || (key && SECTION_BY_TYPE[key]) ? key : 'resumo';
+  const sum = (arr) => arr.reduce((a, t) => a + (counts[t] || 0), 0);
   const tabs = [{ k: 'resumo', label: 'Resumo' }];
   for (const sec of SECTIONS) {
     if (INFECCAO_TYPES.includes(sec.type)) {
-      if (sec.type === 'cultura') tabs.push({ k: 'infeccao', label: 'Infecção respiratória', n: INFECCAO_TYPES.reduce((a, t) => a + (counts[t] || 0), 0) });
+      if (sec.type === INFECCAO_TYPES[0]) tabs.push({ k: 'infeccao', label: 'Infecção respiratória', n: sum(INFECCAO_TYPES) });
+    } else if (TESTES_TYPES.includes(sec.type)) {
+      if (sec.type === TESTES_TYPES[0]) tabs.push({ k: 'testes', label: 'Testes funcionais', n: sum(TESTES_TYPES) });
     } else tabs.push({ k: sec.type, label: sec.label, n: counts[sec.type] || 0 });
   }
   const section = SECTION_BY_TYPE[active];
@@ -431,7 +509,8 @@ export function PatientPage({ id, tab }) {
     </nav>
     <div class="tab-body">
       ${active === 'resumo' ? html`<${Summary} patient=${patient} records=${records} />`
-        : active === 'infeccao' ? html`<${InfectionTab} key=${'inf' + (legacy || '')} patient=${patient} records=${records} initial=${legacy} />`
+        : active === 'infeccao' ? html`<${InfectionTab} key=${'inf' + (legacy || '')} patient=${patient} records=${records} initial=${INFECCAO_TYPES.includes(legacy) ? legacy : null} />`
+        : active === 'testes' ? html`<${TestesTab} key=${'tst' + (legacy || '')} patient=${patient} records=${records} initial=${TESTES_TYPES.includes(legacy) ? legacy : null} />`
         : active === 'modulador' ? html`<${VisitsTab} patient=${patient} records=${records} />`
         : html`<${SectionTab} key=${active} section=${section} patient=${patient} records=${records} />`}
     </div>

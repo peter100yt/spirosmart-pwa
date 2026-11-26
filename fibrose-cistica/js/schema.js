@@ -346,6 +346,44 @@ export const SECTIONS = [
     ],
     columns: ['date', 'idade', 'distancia', 'distPredita', 'distPct', 'spo2Ini', 'spo2Min', 'obs'],
   },
+  {
+    type: 'dinamometria',
+    label: 'Dinamometria',
+    singular: 'dinamometria (força de preensão)',
+    fields: [
+      D,
+      { key: 'dominancia', label: 'Mão dominante', type: 'seg', options: ['Direita', 'Esquerda'] },
+      { key: 'direita', label: 'Mão direita', unit: 'kgf', type: 'num', hint: 'Melhor valor das tentativas' },
+      { key: 'esquerda', label: 'Mão esquerda', unit: 'kgf', type: 'num', hint: 'Melhor valor das tentativas' },
+      { key: 'obs', label: 'Observações', type: 'text', wide: true },
+    ],
+    columns: ['date', 'idade', 'dominancia', 'direita', 'esquerda', 'obs'],
+  },
+  {
+    type: 'tsl1min',
+    label: 'Sentar e levantar 1 min',
+    singular: 'teste de sentar e levantar de 1 minuto',
+    fields: [
+      D,
+      { key: 'repeticoes', label: 'Repetições em 1 minuto', type: 'num' },
+      { key: 'repPrev', label: 'Repetições previstas', type: 'num', hint: 'Opcional — informe para calcular o % do previsto' },
+      { key: 'spo2Ini', label: 'SpO₂ inicial', unit: '%', type: 'num' },
+      { key: 'spo2Min', label: 'SpO₂ mínima', unit: '%', type: 'num' },
+      { key: 'obs', label: 'Observações', type: 'text', wide: true },
+    ],
+    columns: ['date', 'idade', 'repeticoes', 'repPrev', 'tslPct', 'spo2Ini', 'spo2Min', 'obs'],
+  },
+  {
+    type: 'tsl5rep',
+    label: 'Sentar e levantar 5 rep.',
+    singular: 'teste de sentar e levantar de 5 repetições',
+    fields: [
+      D,
+      { key: 'tempo', label: 'Tempo para 5 repetições', unit: 's', type: 'num' },
+      { key: 'obs', label: 'Observações', type: 'text', wide: true },
+    ],
+    columns: ['date', 'idade', 'tempo', 'obs'],
+  },
 ];
 
 export const SECTION_BY_TYPE = Object.fromEntries(SECTIONS.map((s) => [s.type, s]));
@@ -362,6 +400,7 @@ export const COMPUTED_LABELS = {
   pfePct: { label: '% previsto' },
   distPredita: { label: 'Distância predita', unit: 'm' },
   distPct: { label: '% predito' },
+  tslPct: { label: '% previsto' },
   ...Object.fromEntries(
     SPIRO_PARAMS.flatMap((p) => [
       [`${p.k}_ppre`, { label: `${p.label} % prev. pré` }],
