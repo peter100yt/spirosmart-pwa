@@ -1,6 +1,6 @@
 // Service worker do Registro FC: funcionamento offline.
 // IMPORTANTE: ao publicar uma nova versão, altere VERSION para que os usuários recebam a atualização.
-const VERSION = 'registro-fc-v3';
+const VERSION = 'registro-fc-v4';
 const ASSETS = [
   './',
   'index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   'js/backup.js',
   'js/calc.js',
   'js/charts.js',
+  'js/dashboard.js',
   'js/db.js',
   'js/forms.js',
   'js/growth-data.js',

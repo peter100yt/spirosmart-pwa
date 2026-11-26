@@ -4,6 +4,7 @@ import * as db from './db.js';
 import { useRoute } from './router.js';
 import { Icon, ModalHost, toast } from './ui.js';
 import { PatientList, ReportPage, DataPage } from './pages.js';
+import { DashboardPage } from './dashboard.js';
 import { PatientPage } from './patient.js';
 
 const WEEK = 7 * 864e5;
@@ -25,7 +26,8 @@ function TopBar({ route }) {
         <span class="brand-t">Registro FC</span>
       </a>
       <nav class="nav">
-        ${link('#/', 'Pacientes', 'users', !a || a === 'p')}
+        ${link('#/', 'Painel', 'dash', !a)}
+        ${link('#/pacientes', 'Pacientes', 'users', a === 'pacientes' || a === 'p')}
         ${link('#/relatorio', 'Relatório anual', 'report', a === 'relatorio')}
         ${link('#/dados', 'Dados e backup', 'db', a === 'dados')}
       </nav>
@@ -50,11 +52,12 @@ function App() {
   if (!db.store.ready) return html`<div class="loading">Carregando…</div>`;
   const [a, b, c] = route.parts;
   let page;
-  if (!a) page = html`<${PatientList} />`;
+  if (!a) page = html`<${DashboardPage} />`;
+  else if (a === 'pacientes') page = html`<${PatientList} />`;
   else if (a === 'p' && b) page = html`<${PatientPage} id=${b} tab=${c} key=${b} />`;
   else if (a === 'relatorio') page = html`<${ReportPage} />`;
   else if (a === 'dados') page = html`<${DataPage} />`;
-  else page = html`<${PatientList} />`;
+  else page = html`<${DashboardPage} />`;
   return html`<${TopBar} route=${route} /><main id="main">${page}</main><${ModalHost} />`;
 }
 

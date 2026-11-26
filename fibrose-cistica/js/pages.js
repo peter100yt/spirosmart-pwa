@@ -67,7 +67,7 @@ function ImportDialog({ close }) {
     close();
     toast(`${batch.length} paciente${batch.length > 1 ? 's' : ''} importado${batch.length > 1 ? 's' : ''} (${batch.reduce((s, b) => s + b.records.length, 0)} registros).`, { kind: 'ok', timeout: 7000 });
     if (batch.length === 1) navigate(`/p/${batch[0].patient.id}`);
-    else navigate('/');
+    else navigate('/pacientes');
   };
 
   const setAction = (i, action) => setItems((list) => list.map((x, j) => (j === i ? { ...x, action } : x)));
