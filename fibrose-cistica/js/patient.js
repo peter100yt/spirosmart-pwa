@@ -57,7 +57,7 @@ async function removePatient(patient) {
   });
   if (!ok) return;
   await db.deletePatient(patient.id);
-  navigate('/');
+  navigate('/pacientes');
   toast('Paciente excluído.');
 }
 
@@ -66,7 +66,7 @@ function Header({ patient, records }) {
   const mod = modLabel(patient);
   const modTime = patient.moduladorInicio ? ageParts(patient.moduladorInicio, new Date().toISOString().slice(0, 10)) : null;
   return html`<header class="p-head">
-    <a class="back" href="#/"><${Icon} name="back" size=${16} /> Pacientes</a>
+    <a class="back" href="#/pacientes"><${Icon} name="back" size=${16} /> Pacientes</a>
     <div class="p-head-main">
       <div class="p-id">
         <h1>${patient.nome}</h1>
@@ -484,7 +484,7 @@ export function PatientPage({ id, tab }) {
   const patient = db.store.patients.get(id);
   const records = db.patientRecords(id);
   if (!patient) {
-    return html`<div class="page"><${Empty} icon="users" title="Paciente não encontrado"><a class="btn" href="#/">Voltar à lista</a></${Empty}></div>`;
+    return html`<div class="page"><${Empty} icon="users" title="Paciente não encontrado"><a class="btn" href="#/pacientes">Voltar à lista</a></${Empty}></div>`;
   }
   const counts = sectionCount(records);
   // cultura / exacerbação / erradicação agora são uma única aba ("infeccao"); links antigos continuam funcionando

@@ -21,6 +21,18 @@ Endereço após a publicação: `<seu-site>/fibrose-cistica/`
 Atalhos: `/` busca paciente · `Enter` avança para o próximo campo (como na planilha) ·
 `Ctrl+Enter` salva · `Esc` fecha.
 
+## Painel (tela inicial)
+
+Resume o serviço: pacientes em acompanhamento e em modulador, exacerbações e internações do ano,
+VEF1 e Z IMC médios, **pontos de atenção por paciente**, VEF1 médio por ano, variação após o início do
+modulador, germes da última cultura, faixa etária e genótipo, além da dica do dia e de um guia rápido.
+
+Os pontos de atenção usam rotinas de referência (cultura e espirometria a cada 3 meses, antropometria a
+cada 3 meses, laboratório anual, TGO/TGP em modulador a cada 3 meses nos primeiros 18 meses e anualmente
+depois, avaliação oftalmológica anual em menores de 18 anos em modulador, Z IMC/E/I ≤ −1 ou ≤ −2 e queda de
+10 pontos no VEF1). Os limites ficam em `LIMITES`, no início de `js/dashboard.js`, e devem ser ajustados ao
+protocolo do serviço.
+
 ## O que é calculado automaticamente
 
 | Item | Como |
@@ -77,6 +89,7 @@ js/growth.js        escores-Z OMS  (tabelas em js/growth-data.js, geradas por to
 js/db.js            armazenamento local (IndexedDB)
 js/xlsx-import.js   leitura das planilhas no modelo atual
 js/xlsx-export.js   exportações Excel;  js/backup.js  backup JSON (com senha opcional)
+js/dashboard.js     painel (regras de atenção e indicadores)
 js/app.js, pages.js, patient.js, forms.js, charts.js, ui.js, router.js   interface
 vendor/             Preact + htm, Chart.js, ExcelJS (licenças MIT/Apache na mesma pasta)
 ```

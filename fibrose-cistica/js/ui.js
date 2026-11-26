@@ -23,6 +23,7 @@ const P = {
   lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
   table: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14',
   chevron: 'M9 6l6 6-6 6',
+  dash: 'M4 4h7v9H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 15h7v5H4z',
   refresh: 'M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4',
 };
 export function Icon({ name, size = 18, cls = '' }) {
