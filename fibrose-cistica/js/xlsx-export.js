@@ -125,6 +125,7 @@ export function buildDatabaseWorkbook(ExcelJS, { patients, recordsOf, pseudonymi
     if (s.type === 'internamento') computedKeys.push('diasInternacao');
     if (s.type === 'peakflow') computedKeys.push('pfePct');
     if (s.type === 'caminhada') computedKeys.push('distPredita', 'distPct');
+    if (s.type === 'tsl1min') computedKeys.push('tslPct');
     for (const k of computedKeys) {
       const m = COMPUTED_LABELS[k];
       cols.push({ key: k, label: `${m.label}${m.unit ? ` (${m.unit})` : ''} [calc.]` });

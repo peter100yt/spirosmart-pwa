@@ -294,7 +294,7 @@ export function PatientForm({ patient, close, onSaved }) {
 }
 
 // ------------------------------------------------------ consulta rápida ----
-const QUICK_TYPES = ['antropometria', 'funcao', 'cultura', 'laboratorio', 'exacerbacao', 'erradicacao', 'imagem', 'internamento', 'peakflow', 'caminhada', 'modulador'];
+const QUICK_TYPES = ['antropometria', 'funcao', 'cultura', 'laboratorio', 'exacerbacao', 'erradicacao', 'imagem', 'internamento', 'peakflow', 'caminhada', 'dinamometria', 'tsl1min', 'tsl5rep', 'modulador'];
 
 export function QuickVisit({ patient, records, close }) {
   const [date, setDate] = useState(todayISO());

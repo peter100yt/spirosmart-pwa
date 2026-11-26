@@ -137,6 +137,9 @@ export function computeRecord(rec, patient) {
     case 'peakflow':
       if (rec.pfe > 0 && rec.pfePrev > 0) out.pfePct = r0((rec.pfe / rec.pfePrev) * 100);
       break;
+    case 'tsl1min':
+      if (rec.repeticoes > 0 && rec.repPrev > 0) out.tslPct = r0((rec.repeticoes / rec.repPrev) * 100);
+      break;
     case 'caminhada': {
       let pred = rec.distPrev;
       if (!(pred > 0) && out.idadeAnos && (patient?.sexo === 'M' || patient?.sexo === 'F')) {
